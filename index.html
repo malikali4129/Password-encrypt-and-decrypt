@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Encryptor/Decryptor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        @keyframes glowing-border {
+            0% { box-shadow: 0 0 5px currentColor, inset 0 0 5px currentColor; }
+            50% { box-shadow: 0 0 15px currentColor, inset 0 0 15px currentColor; }
+            100% { box-shadow: 0 0 5px currentColor, inset 0 0 5px currentColor; }
+        }
+
+        @keyframes toast-slide-in {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toast-slide-out {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+        
+        /* Custom classes for gradients on a dark neon background */
+        .glowing-btn, .glowing-btn-alt {
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+            background: none;
+        }
+
+        .glowing-btn::before, .glowing-btn-alt::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            filter: blur(15px);
+            transform: scale(0.95);
+        }
+        
+        .glowing-btn::before {
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+        }
+        
+        .glowing-btn-alt::before {
+            background: linear-gradient(45deg, #8a2be2, #4169e1);
+        }
+
+        .glowing-btn:hover::before, .glowing-btn-alt:hover::before {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .glowing-btn:hover {
+            color: #0d1117;
+        }
+
+        .glowing-btn-alt:hover {
+            color: #e2e8f0;
+        }
+
+        .glowing-btn:active, .glowing-btn-alt:active {
+            transform: scale(0.95);
+        }
+        
+        .toast {
+            animation: toast-slide-in 0.5s ease-out forwards;
+        }
+
+        .toast-slide-out {
+            animation: toast-slide-out 0.5s ease-out forwards;
+        }
+
+        /* Drag and Drop Styles */
+        .drag-over {
+            border-color: #58a6ff !important;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.5);
+            background-color: rgba(88, 166, 255, 0.1) !important;
+        }
+    </style>
+</head>
+<body class="bg-[#0d1117] text-[#e2e8f0] transition-colors duration-500 flex flex-col items-center justify-between p-4 md:p-8 min-h-screen">
+    <div class="main-container max-w-lg w-full flex-grow flex flex-col justify-center">
+        <!-- Input Card -->
+        <div class="floating-card bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl p-6 mb-6">
+            <label for="input-text" class="block text-sm font-medium mb-2">Text/Password</label>
+            <textarea id="input-text" rows="1" autocomplete="off" placeholder="Enter text here..." class="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#58a6ff] resize-none bg-[#0d1117] text-[#c9d1d9] border border-[#30363d]"></textarea>
+            <input type="file" id="file-input" accept=".txt" class="hidden">
+            <div id="drop-zone" class="mt-4 p-4 border-2 border-dashed border-[#30363d] rounded-lg text-center text-sm cursor-pointer hover:bg-gray-800 transition-colors">
+                <p>or drag and drop a .txt file here</p>
+            </div>
+        </div>
+
+        <!-- Secret Key Card -->
+        <div class="floating-card bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl p-6 mb-6">
+            <label for="secret-key" class="block text-sm font-medium mb-2">Secret Key</label>
+            <input type="password" id="secret-key" autocomplete="off" placeholder="Enter a secret key..." class="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#58a6ff] bg-[#0d1117] text-[#c9d1d9] border border-[#30363d]">
+        </div>
+
+        <!-- Buttons Card -->
+        <div class="floating-card bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl p-6 mb-6">
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="encrypt-btn" class="glowing-btn w-full sm:w-1/2 font-semibold py-3 rounded-lg shadow-md text-white">
+                    Encrypt
+                </button>
+                <button id="decrypt-btn" class="glowing-btn-alt w-full sm:w-1/2 font-semibold py-3 rounded-lg shadow-md text-white">
+                    Decrypt
+                </button>
+            </div>
+        </div>
+
+        <!-- Output Card -->
+        <div class="floating-card bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl p-6 mb-4">
+            <div id="output-container" class="relative">
+                <label for="output-text" class="block text-sm font-medium mb-2">Output</label>
+                <textarea id="output-text" rows="1" readonly class="w-full px-4 py-2 rounded-lg resize-none bg-[#0d1117] text-[#c9d1d9] border border-[#30363d]"></textarea>
+                <div class="flex justify-end space-x-2 mt-2">
+                    <button id="copy-btn" class="p-2 rounded-lg transition-transform duration-200 hover:scale-110 text-gray-400 hover:text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                    <button id="download-btn" class="p-2 rounded-lg transition-transform duration-200 hover:scale-110 text-gray-400 hover:text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden">
+        <div class="floating-card w-11/12 max-w-md p-8 text-center bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl scale-95 transition-transform duration-300">
+            <h2 class="text-xl font-bold mb-4">Confirm Secret Key</h2>
+            <p class="text-sm text-gray-400 mb-4">Please re-enter your secret key to confirm and proceed with encryption.</p>
+            <div class="mb-4">
+                <input type="password" id="confirm-secret-key" placeholder="Re-enter secret key..." class="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#58a6ff] bg-[#0d1117] text-[#c9d1d9] border border-[#30363d]">
+            </div>
+            <div class="flex space-x-4">
+                <button id="confirm-key-btn" class="glowing-btn w-full font-semibold py-2 rounded-lg text-white">Confirm</button>
+                <button id="cancel-confirm-btn" class="glowing-btn-alt w-full font-semibold py-2 rounded-lg text-white">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="message-box" class="fixed bottom-4 right-4 z-[100] px-6 py-3 rounded-xl shadow-lg transition-all text-white font-medium" style="display: none;"></div>
+
+    <footer class="mt-4 w-full flex justify-center">
+        <div class="floating-card bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl p-6 max-w-lg w-full">
+            <div class="flex flex-col items-center justify-center space-y-2">
+                <span class="text-lg">Made by</span>
+                <div class="flex flex-col items-center space-y-2">
+                    <span class="text-lg font-semibold">Ali Imran Malik</span>
+                    <div class="flex space-x-4">
+                        <a href="https://www.facebook.com/business.aliimranmalik/" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-blue-500 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                <path d="M12.001 2.002c-5.522 0-9.999 4.477-9.999 9.999 0 4.99 3.656 9.126 8.434 9.873v-6.985h-2.535v-2.888h2.535v-2.1c0-2.522 1.493-3.916 3.78-3.916 1.077 0 2.001.192 2.001.192v2.203h-1.125c-1.238 0-1.624.77-1.624 1.564v1.86h2.888l-.465 2.888h-2.423v6.985c4.778-.747 8.434-4.883 8.434-9.873 0-5.522-4.477-9.999-9.999-9.999z"/>
+                            </svg>
+                        </a>
+                        <a href="https://github.com/malikali4129" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-cyan-400 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.83 9.547.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.474-1.11-1.474-.908-.62.067-.606.067-.606 1.003.07 1.531 1.032 1.531 1.032.892 1.529 2.341 1.088 2.91.832.092-.62.359-1.088.653-1.339-2.22-.253-4.555-1.113-4.555-4.954 0-1.09.39-1.984 1.029-2.682-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.701.114 2.516.331 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.202 2.398.099 2.65a3.78 3.78 0 011.029 2.682c0 3.84-2.337 4.69-4.562 4.945.36.369.676.89.676 1.792 0 1.29-.011 2.33-.011 2.646 0 .265.18.579.688.484 3.97-1.36 6.833-5.12 6.833-9.535C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <span class="text-lg">with ❤️ from 🇵🇰</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const inputText = document.getElementById('input-text');
+        const secretKey = document.getElementById('secret-key');
+        const encryptBtn = document.getElementById('encrypt-btn');
+        const decryptBtn = document.getElementById('decrypt-btn');
+        const outputText = document.getElementById('output-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const messageBox = document.getElementById('message-box');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        
+        // Modal elements
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmSecretKeyInput = document.getElementById('confirm-secret-key');
+        const confirmKeyBtn = document.getElementById('confirm-key-btn');
+        const cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
+
+        // Function to show a message to the user as a toast
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+
+            if (type === 'error') {
+                messageBox.classList.remove('bg-green-600');
+                messageBox.classList.add('bg-red-600');
+            } else {
+                messageBox.classList.remove('bg-red-600');
+                messageBox.classList.add('bg-green-600');
+            }
+
+            messageBox.classList.remove('toast-slide-out');
+            messageBox.classList.add('toast');
+            
+            setTimeout(() => {
+                messageBox.classList.remove('toast');
+                messageBox.classList.add('toast-slide-out');
+                messageBox.addEventListener('animationend', () => {
+                    messageBox.style.display = 'none';
+                    messageBox.classList.remove('toast-slide-out');
+                }, { once: true });
+            }, 3000);
+        }
+        
+        // Function to handle textarea resizing
+        function resizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            const maxHeight = 4 * 24;
+            textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+        }
+        
+        // Show the confirmation modal
+        function showConfirmationModal() {
+            confirmModal.classList.remove('hidden');
+            setTimeout(() => confirmModal.querySelector('.floating-card').classList.remove('scale-95'), 10);
+        }
+
+        // Hide the confirmation modal
+        function hideConfirmationModal() {
+            confirmModal.querySelector('.floating-card').classList.add('scale-95');
+            setTimeout(() => confirmModal.classList.add('hidden'), 300);
+            confirmSecretKeyInput.value = ''; // Clear the input field
+        }
+
+        // Handle encryption logic
+        function performEncryption() {
+            try {
+                const encrypted = CryptoJS.AES.encrypt(inputText.value, secretKey.value).toString();
+                outputText.value = encrypted;
+                inputText.value = ''; // Clear the input field after successful operation
+                showMessage('Text encrypted successfully!', 'success');
+                resizeTextarea(outputText);
+                hideConfirmationModal();
+            } catch (e) {
+                console.error(e);
+                showMessage('Encryption failed. Please try again.', 'error');
+                hideConfirmationModal();
+            }
+        }
+
+        // Handle file reading logic
+        function handleFile(file) {
+            if (file && file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    inputText.value = event.target.result;
+                    resizeTextarea(inputText);
+                    showMessage('File loaded successfully!', 'success');
+                };
+                reader.onerror = () => {
+                    showMessage('Failed to read file.', 'error');
+                };
+                reader.readAsText(file);
+            } else {
+                showMessage('Please select a valid .txt file.', 'error');
+            }
+        }
+
+        // Event listeners for buttons
+        encryptBtn.addEventListener('click', () => {
+            if (!inputText.value || !secretKey.value) {
+                showMessage('Please enter both text and a secret key.', 'error');
+                return;
+            }
+            showConfirmationModal();
+        });
+
+        confirmKeyBtn.addEventListener('click', () => {
+            if (confirmSecretKeyInput.value === secretKey.value) {
+                performEncryption();
+            } else {
+                showMessage('Keys do not match. Please try again.', 'error');
+            }
+        });
+
+        cancelConfirmBtn.addEventListener('click', () => {
+            hideConfirmationModal();
+        });
+
+        decryptBtn.addEventListener('click', () => {
+            if (!inputText.value || !secretKey.value) {
+                showMessage('Please enter both text and a secret key.', 'error');
+                return;
+            }
+            try {
+                const decrypted = CryptoJS.AES.decrypt(inputText.value, secretKey.value);
+                const originalText = decrypted.toString(CryptoJS.enc.Utf8);
+                if (originalText) {
+                    outputText.value = originalText;
+                    inputText.value = ''; // Clear the input field after successful operation
+                    showMessage('Text decrypted successfully!', 'success');
+                    resizeTextarea(outputText);
+                } else {
+                    showMessage('Decryption failed. Invalid key or encrypted text.', 'error');
+                    // Do not clear the output, as requested.
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Decryption failed. Invalid key or encrypted text.', 'error');
+                // Do not clear the output, as requested.
+                
+            }
+        });
+
+        // Copy to clipboard using a more robust method
+        copyBtn.addEventListener('click', () => {
+            if (outputText.value) {
+                // Create a temporary input element
+                const tempInput = document.createElement('input');
+                tempInput.type = 'text';
+                tempInput.value = outputText.value;
+                tempInput.style.position = 'absolute';
+                tempInput.style.left = '-9999px';
+                document.body.appendChild(tempInput);
+                
+                // Select the text in the temporary input
+                tempInput.focus();
+                tempInput.select();
+                tempInput.setSelectionRange(0, 99999); // For mobile devices
+                
+                try {
+                    // Execute the copy command
+                    document.execCommand('copy');
+                    showMessage('Copied to clipboard!', 'success');
+                } catch (err) {
+                    showMessage('Failed to copy. Please copy the text manually.', 'error');
+                } finally {
+                    // Clean up by removing the temporary input
+                    document.body.removeChild(tempInput);
+                }
+            } else {
+                showMessage('Nothing to copy.', 'error');
+            }
+        });
+        
+        // Download as a .txt file
+        downloadBtn.addEventListener('click', () => {
+            if (outputText.value) {
+                const blob = new Blob([outputText.value], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'encrypted_text.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showMessage('File downloaded!', 'success');
+            } else {
+                showMessage('Nothing to download.', 'error');
+            }
+        });
+        
+        // Auto-expand textarea functionality on user input
+        inputText.addEventListener('input', () => {
+            resizeTextarea(inputText);
+        });
+
+        // Click to select file listener
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // Drag and drop event listeners
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            handleFile(e.dataTransfer.files[0]);
+        });
+    </script>
+</body>
+</html>
