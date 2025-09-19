@@ -1,46 +1,45 @@
-🔐 Password Encryptor/Decryptor
-A simple yet secure web application designed to help you encrypt and decrypt passwords, notes, and other sensitive text using a secret key. Built with a clean, responsive, and modern user interface, this tool ensures your data remains confidential and accessible only to you.
+# 🔐 Password Encryptor/Decryptor
 
-✨ Features
-Encryption & Decryption: Securely convert your plain text into an encrypted cipher and back again.
+A **simple yet secure web application** to encrypt and decrypt passwords, notes, and other sensitive text using a secret key. Built with a **clean, modern, and responsive interface**, this tool ensures your data stays confidential and accessible only to you.
 
-Secret Key Protection: All operations require a unique secret key, providing an essential layer of security.
+---
 
-Security Confirmation: Before encrypting, the app prompts you to re-enter your secret key to prevent accidental encryption with an incorrect key.
+## ✨ Features
 
-File Support: Easily load text from a .txt file using drag-and-drop or the file selector.
+- **Encryption & Decryption:** Securely convert plain text into encrypted cipher text and vice versa.  
+- **Secret Key Protection:** All operations require a unique secret key for an added layer of security.  
+- **Security Confirmation:** Re-enter your secret key before encryption to prevent mistakes.  
+- **File Support:** Load text from `.txt` files via drag-and-drop or file selector.  
+- **Instant Output Management:**  
+  - 📋 **Copy to Clipboard:** Copy encrypted/decrypted text with a single click.  
+  - 📥 **Download File:** Save the output as a `.txt` file for offline use.  
+- **User-Friendly Interface:** Dark-themed UI with neon glows and subtle hover effects.  
+- **Responsive Design:** Optimized for mobile and desktop devices.  
+- **Real-time Notifications:** Elegant toast messages for success or error feedback.  
 
-Instant Output Management:
+---
 
-📋 Copy to Clipboard: A single click copies the encrypted or decrypted text to your clipboard.
+## 🛠️ Technologies Used
 
-📥 Download File: Save the output directly as a .txt file for offline use.
+- **HTML5** - Core structure of the web app.  
+- **Tailwind CSS** - Utility-first framework for rapid, responsive UI design.  
+- **JavaScript (ES6)** - Handles encryption/decryption, user interaction, and file management.  
+- **CryptoJS** - Implements AES encryption directly in the browser.  
+- **Font Awesome** - Provides intuitive icons for actions like copy and download.  
 
-User-Friendly Interface: A sleek, dark-themed UI with subtle neon glows and hover effects for an engaging experience.
+---
 
-Responsive Design: Optimized to work flawlessly on all devices, from mobile phones to desktops.
+## 👨‍💻 How It Works
 
-Real-time Notifications: Get instant feedback with elegant toast messages for successful operations or errors.
+1. **Enter Your Text:** Type or paste text into the main text area, or drag-and-drop a `.txt` file.  
+2. **Set Your Secret Key:** Enter a unique secret key. This key is required for both encryption and decryption.  
+3. **Choose Your Action:** Click **Encrypt** or **Decrypt**.  
+4. **View Your Output:** The result will appear below, ready to be copied or downloaded.  
 
-🛠️ Technologies Used
-HTML5: Provides the foundational structure of the web application.
+---
 
-Tailwind CSS: A utility-first CSS framework used for rapid and responsive UI development.
+## 🤝 Contribution
 
-JavaScript (ES6): Powers the core logic, including encryption/decryption, user interaction, and file handling.
+This project was created by **Ali Imran Malik** as a showcase of modern web development techniques.  
 
-CryptoJS: A robust library for implementing advanced encryption standards (AES) directly in the browser.
-
-Font Awesome: Used for the clean and intuitive icons, such as the copy and download buttons.
-
-👨‍💻 How It Works
-Enter Your Text: Type or paste the text you want to encrypt or decrypt into the main text area. You can also drag and drop a .txt file.
-
-Set Your Secret Key: Enter a unique secret key in the dedicated input field. Remember, this key is crucial for both encrypting and decrypting your data!
-
-Choose Your Action: Click either the "Encrypt" or "Decrypt" button.
-
-View Your Output: The result will appear in the output area below, ready to be copied or downloaded.
-
-🤝 Contribution
-This project was built and designed by Ali Imran Malik as a demonstration of modern web development techniques. Feel free to explore the code, fork the repository, and adapt it for your own projects!
+Feel free to **fork the repository**, explore the code, and adapt it for your own projects!
